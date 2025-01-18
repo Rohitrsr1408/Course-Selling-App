@@ -6,7 +6,7 @@ const jwt = require('jsonwebtoken');
 const userRouter = Router();
 const {UserJwt}=require('../config');
  // Consider moving this to an environment variable for better security.
-
+  
 userRouter.use(express.json());
 
 // Signup Route
@@ -59,8 +59,27 @@ userRouter.post('/signin', async function (req, res) {
 });
 
 // Placeholder for GET `/purchases` route
-userRouter.get('/purchases', function (req, res) {
-    res.status(501).json({ message: "Not implemented" });
+userRouter.get("/purchases", userMiddleware, async function(req, res) {
+    const userId = req.userId;
+
+    const purchases = await purchaseModel.find({
+        userId,
+    });
+
+    let purchasedCourseIds = [];
+
+    for (let i = 0; i<purchases.length;i++){ 
+        purchasedCourseIds.push(purchases[i].courseId)
+    }
+
+    const coursesData = await courseModel.find({
+        _id: { $in: purchasedCourseIds }
+    })
+
+    res.json({
+        purchases,
+        coursesData
+    })
 });
 
 module.exports = {

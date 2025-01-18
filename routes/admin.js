@@ -25,6 +25,7 @@ adminRouter.post('/signup',async function(req,res){
             message:"Admin already exists"
         })
      errorthrown=true;
+     console.log(e);
     }
     if(!errorthrown){
         res.json("Admin is registered");
@@ -60,14 +61,14 @@ adminRouter.post('/signin',async function(req,res){
 
 adminRouter.post('/course',adminMiddleware,async function(req,res){
     const adminId=req.userId;
-    const {title,description,imageurl,price}=req.body;
+    const {title,description,imageUrl,price}=req.body;
 
     const course= await courseModel.create({
         title:title,
         description:description,
-        imageurl:imageurl,
+        imageUrl:imageUrl,
         price:price,
-        CreatorId:adminId
+        creatorId:adminId
     })
     res.json({
         message:"Course is created",
@@ -75,17 +76,47 @@ adminRouter.post('/course',adminMiddleware,async function(req,res){
     })
 })
 
-adminRouter.put('/course',adminMiddleware,async function(req,res){
-    const adminId=req.userId;
-    const{courseId,title,description,imageurl,price}=req.body;
-   await courseModel.updateOne({_id:courseId,CreatorId:adminId},{title:title,description:description,imageurl:imageurl,price:price})
-       
-    res.json({
-        message:"Course is updated"
-    });
+adminRouter.put('/course', adminMiddleware, async function (req, res) {
+    try {
+        const adminId = req.userId; // Assuming this is set by adminMiddleware
+        const { title, description, imageUrl, price, courseId } = req.body;
+         console.log(adminId);
+        // Validate required fields
+        if (!courseId || !title || !description || !imageUrl || !price) {
+            return res.status(400).json({ message: "All fields are required." });
+        }
+
+        // Update the course
+        const course = await courseModel.findOneAndUpdate(
+            { _id: courseId },
+            { title, description, imageUrl, price },
+            { new: true } // Returns the updated document
+        );
+         console.log(course);
+        if (!course) {
+            return res.status(404).json({ message: "Course not found or unauthorized." });
+        }
+
+        res.status(200).json({
+            message: "Course updated successfully.",
+            courseId: course._id
+        });
+    } catch (error) {
+        console.error("Error updating course:", error);
+        res.status(500).json({ message: "Internal server error." });
+    }
 });
-adminRouter.get('/course/bulk',function(req,res){
-    
+adminRouter.get('/course/bulk',adminMiddleware,async function(req,res){
+    const adminId = req.userId;
+
+    const courses = await courseModel.find({
+        creatorId: adminId 
+    });
+
+    res.json({
+        message: "Course updated",
+        courses
+    })
 })
 
 module.exports={
